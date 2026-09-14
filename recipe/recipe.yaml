@@ -1,0 +1,81 @@
+schema_version: 1
+
+context:
+  version: "3.3.1"
+
+package:
+  name: cf-units
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/c/cf-units/cf_units-${{ version }}.tar.gz
+  sha256: 84339f582994ae32ca5c472075c1e603a89f6c6f5a96cc1031bb5da700a14f3a
+
+build:
+  number: 1
+  script:
+    - if: win
+      then: [build.bat]
+      else: [build.sh]
+  python:
+    version_independent: true
+
+requirements:
+  build:
+    - if: build_platform != target_platform
+      then:
+        - python ${{ python_min }}.*
+        - cross-python_${{ target_platform }}
+        - numpy >=2
+        - cython >=3.0
+    - ${{ compiler("c") }}
+    - ${{ stdlib("c") }}
+  host:
+    - python ${{ python_min }}.*
+    - setuptools >=77.0.3
+    - setuptools-scm >=8.0
+    - numpy
+    - cython >=3.0
+    - udunits2
+    - pip
+  run:
+    - python >=${{ python_min }}
+    - cftime >=1.2
+    - jinja2
+    - ${{ pin_compatible('udunits2', upper_bound="x.x") }}
+
+tests:
+  - python:
+      imports:
+        - cf_units
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+  - requirements:
+      run:
+        - abi3audit
+        - pytest
+    script:
+      - pytest --pyargs cf_units
+      - if: unix
+        then:
+          - abi3audit $SP_DIR/cf_units/_udunits2.abi3.so -s -v --assume-minimum-abi3 ${{ python_min }}
+      - if: win
+        then:
+          - abi3audit %SP_DIR%\\cf_units\\_udunits2.pyd -s -v --assume-minimum-abi3 ${{ python_min }}
+
+about:
+  summary: Units of measure as required by the Climate and Forecast (CF) metadata conventions
+  license: BSD-3-Clause
+  license_file: LICENSE
+  homepage: https://pypi.org/project/cf-units/
+  documentation: https://cf-units.readthedocs.io
+
+extra:
+  recipe-maintainers:
+    - bjlittle
+    - ocefpaf
+    - pelson
+    - pp-mo
+    - trexfeathers
